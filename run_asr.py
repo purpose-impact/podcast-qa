@@ -48,7 +48,7 @@ def get_job_config(lang: str, op: str):
         },
     }
 
-
+@st.cache_data
 def run_sm_asr(url: str, lang: str = "en", op: str = "standard"):
     file_path = download_yt_url(url)
     with BatchClient(settings) as client:
