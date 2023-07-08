@@ -1,11 +1,10 @@
+from run_asr import run_sm_asr
 import streamlit as st
 import anthropic
 from anthropic import AI_PROMPT, HUMAN_PROMPT
-anthropic_api_key = st.secrets["ANTHROPIC_API_KEY"]
 
-st.title("🎙️ Podcast Bot", anchor=False)
-st.markdown("Upload a podcast transcript to be summarized automatically, then ask more questions to clarify!")
-uploaded_file = st.file_uploader("Upload transcript", type=("txt"))
+anthropic_api_key = st.secrets["ANTHROPIC_API_KEY"]
+client = anthropic.Client()
 
 def run_completion_and_print():
     with st.chat_message("assistant"):
@@ -25,26 +24,28 @@ def run_completion_and_print():
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": response})
 
-if uploaded_file and anthropic_api_key:
-    client = anthropic.Client()
-    transcript = uploaded_file.read().decode()
+st.set_page_config(page_title="Podcast Bot", page_icon="🎙️")
+st.title("🎙️ Podcast Bot", anchor=False)
+st.markdown("Enter a YouTube link to a podcast to be transcribed and summarized, then ask more questions to clarify!")
+link = st.text_input("Enter a YouTube link", "https://www.youtube.com/watch?v=9GPSdQSBbPg", label_visibility="hidden")
+# st.video(link)
+submitted = False
+if st.button("Submit"):
+    st.session_state.transcript = run_sm_asr(link)
 
-    # Initialize chat history
-    ran_summary = False
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-        # Summarize uploaded text initially
-        summarize_prompt = (
-            f"Here's a podcast transcript:\n\n<transcript>{transcript}</transcript>\n\n"
-            "Can you give me a brief summary?"
-        )
-        st.session_state.messages = [{"role": "user", "content": f"{HUMAN_PROMPT} {summarize_prompt}n\n{AI_PROMPT}"}]
-        run_completion_and_print()
-        ran_summary = True
+    st.session_state.messages = []
+    summarize_prompt = (
+        f"Here's a podcast transcript:\n\n<transcript>{st.session_state.transcript}</transcript>\n\n"
+        "Can you give me a summary?"
+    )
+    st.session_state.messages = [{"role": "user", "content": f"{HUMAN_PROMPT} {summarize_prompt}n\n{AI_PROMPT}"}]
+    run_completion_and_print()
+    submitted = True
 
+if "transcript" in st.session_state:
     # Display chat messages from history on app rerun
-    start_idx = 2 if ran_summary else 1
-    for message in st.session_state.messages[start_idx:]:
+    idx = 2 if submitted else 1
+    for message in st.session_state.messages[idx:]:
         with st.chat_message(message["role"]):
             content = message["content"]
             if message["role"] == "user":
