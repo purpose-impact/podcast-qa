@@ -27,42 +27,49 @@ def run_completion_and_print():
 st.set_page_config(page_title="Podcast Bot", page_icon="🎙️")
 st.title("🎙️ Podcast Bot", anchor=False)
 st.markdown("Enter a YouTube link to a podcast to be transcribed and summarized, then ask more questions to clarify!")
-link = st.text_input("Enter a YouTube link", "https://www.youtube.com/watch?v=9GPSdQSBbPg", placeholder="Enter a YouTube link", label_visibility="hidden")
-st.video(link)
+link = st.text_input("Enter a YouTube link", placeholder="Enter a YouTube link", label_visibility="hidden")
 
-just_summarized = False
-if "transcript" not in st.session_state:
-    st.session_state.transcript = run_sm_asr(link)
-    with st.expander("Transcript"):
-        st.write(st.session_state.transcript)
-    st.session_state.messages = []
-    summarize_prompt = (
-        f"Here's a podcast transcript:\n\n<transcript>{st.session_state.transcript}</transcript>\n\n"
-        "Can you give me a summary?"
-    )
-    st.session_state.messages = [{"role": "user", "content": f"{HUMAN_PROMPT} {summarize_prompt}n\n{AI_PROMPT}"}]
-    run_completion_and_print()
-    just_summarized = True
+if link:
+    st.video(link)
 
+    if "link" not in st.session_state or link != st.session_state.link:
+        # Clear session state
+        for key in st.session_state.keys():
+            if key != "link":
+                del st.session_state[key]
+        st.session_state.link = link
 
-# Display chat messages from history on app rerun
-if not just_summarized:
+    if "transcript" not in st.session_state:
+        st.session_state.transcript = run_sm_asr(link)
     with st.expander("Transcript"):
         st.write(st.session_state.transcript)
 
-    for message in st.session_state.messages[1:]:
+    just_summarized = False
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+        summarize_prompt = (
+            f"Here's a podcast transcript:\n\n<transcript>{st.session_state.transcript}</transcript>\n\n"
+            "Can you give me a summary?"
+        )
+        st.session_state.messages = [{"role": "user", "content": f"{HUMAN_PROMPT} {summarize_prompt}n\n{AI_PROMPT}"}]
+        run_completion_and_print()
+        just_summarized = True
+
+    # Display chat messages from history on app rerun
+    idx = 2 if just_summarized else 1
+    for message in st.session_state.messages[idx:]:
         with st.chat_message(message["role"]):
             content = message["content"]
             if message["role"] == "user":
                 content = message["content"][len(f"{HUMAN_PROMPT} ") : -len(f"{AI_PROMPT} ")]
             st.markdown(content)
 
-# Accept user input
-if prompt := st.chat_input("Ask a question about the podcast"):
-    # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": f"{HUMAN_PROMPT} {prompt}{AI_PROMPT} "})
-    # Display user message in chat message container
-    with st.chat_message("user"):
-        st.markdown(prompt)
-    # Display assistant response in chat message container
-    run_completion_and_print()
+    # Accept user input
+    if prompt := st.chat_input("Ask a question about the podcast"):
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": f"{HUMAN_PROMPT} {prompt}{AI_PROMPT} "})
+        # Display user message in chat message container
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        # Display assistant response in chat message container
+        run_completion_and_print()
