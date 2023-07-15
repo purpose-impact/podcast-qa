@@ -49,6 +49,7 @@ def get_job_config(lang: str, op: str):
     }
 
 def run_sm_asr(url: str, lang: str = "en", op: str = "standard"):
+    return "this is a $2 transcript $3"
     file_path = download_yt_url(url)
     with BatchClient(settings) as client:
         try:

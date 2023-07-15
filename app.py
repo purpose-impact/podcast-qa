@@ -42,7 +42,8 @@ if link:
     if "transcript" not in st.session_state:
         st.session_state.transcript = run_sm_asr(link)
     with st.expander("Transcript"):
-        st.write(st.session_state.transcript)
+        st.download_button("Download transcript", st.session_state.transcript, "transcript.txt")
+        st.write(st.session_state.transcript.replace("$", "\$"))
 
     just_summarized = False
     if "messages" not in st.session_state:
