@@ -13,7 +13,7 @@ def run_completion_and_print():
         for data in client.completions.create(
             prompt=" ".join([m["content"] for m in st.session_state.messages]),
             stop_sequences=[HUMAN_PROMPT],
-            model="claude-v1",
+            model="claude-2",
             max_tokens_to_sample=1000,
             stream=True,
         ):
